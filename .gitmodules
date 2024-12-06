@@ -1,0 +1,3 @@
+[submodule "tutrcos"]
+	path = tutrcos
+	url = https://github.com/robotakusolid/tutrcos
