@@ -9,6 +9,7 @@
 using namespace tutrcos;
 using namespace tutrcos::module;
 
+namespace klibrary {
 class MotorBase : public EncoderBase {
 #define FLT_MAX std::numeric_limits<float>::max()
 public:
@@ -19,7 +20,7 @@ public:
 
   enum class ControlType { PI_D_RAD, PI_D_RADPS, RAW, ZERO };
 
-  MotorBase(Dir dir, float reduction_ratio, float offset, int64_t cpr,
+  MotorBase(Dir dir, float reduction_ratio, int64_t cpr,
             EncoderBase *enc = nullptr)
       : EncoderBase(cpr), dir_{utility::to_underlying(dir)},
         reduction_ratio_{reduction_ratio} {
@@ -128,3 +129,4 @@ private:
   float ref_limit_max_ = FLT_MAX;
   float pre_ref_ = 0;
 };
+} // namespace klibrary
