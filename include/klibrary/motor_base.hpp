@@ -32,10 +32,16 @@ public:
   virtual void stop() { set_input(0); }
   virtual void set_input(float value) { input_ = value; };
 
+  float get_rotation() override {
+    return static_cast<float>(get_count()) / get_cpr() * dir_;
+  }
+
   void set_mode(ControlType mode) { mode_ = mode; }
 
+  void set_count_w_dir(int64_t count) { set_count(count * dir_); }
+
   void set_offset_degree(float value) {
-    offset_ = value / 360. / reduction_ratio_ * get_cpr();
+    offset_ = value / 360. / reduction_ratio_ * get_cpr() * dir_;
   }
 
   void set_ref(float ref) {
@@ -62,8 +68,8 @@ public:
   }
 
   // Kp, Ki, Kd, maximum value of Isum, minimum value of p to calc Isum
-  void set_pid_gain(float kp, float ki, float kd, float i_max = FLT_MAX,
-                    float i_min = 0) {
+  void set_pid_gain(float kp, float ki, float kd, float i_min = 0,
+                    float i_max = FLT_MAX) {
     kp_ = kp;
     ki_ = ki;
     kd_ = kd;
@@ -74,7 +80,6 @@ public:
   bool control() {
     // bool return_value = false;
     uint32_t dt = tutrcos::core::Kernel::get_ticks() - prev_ticks_;
-
     switch (mode_) {
     case ControlType::PI_D_RAD: {
       x_ = get_rad();
@@ -82,14 +87,16 @@ public:
       i_ += p_ * (dt / tickrate_);
       i_ = (abs(p_) < i_min_) ? 0 : std::clamp<float>(i_, -i_max_, i_max_);
       d_ = (pre_x_ - x_) / (dt / tickrate_);
-      current_ = (p_ * kp_ + i_ * ki_ + d_ * kd_);
+      input_ = (p_ * kp_ + i_ * ki_ + d_ * kd_);
       pre_x_ = x_;
-      set_input(current_ * dir_);
+      // set_input(input_ * dir_);
+      set_input(input_);
       break;
     }
     case ControlType::RAW: {
       i_ = 0;
-      set_input(ref_ * dir_);
+      // set_input(ref_ * dir_);
+      set_input(ref_);
       break;
     }
     case ControlType::ZERO: {
@@ -126,7 +133,7 @@ private:
   float kp_, ki_, kd_, i_max_, i_min_;
   float x_, pre_x_;
 
-  float ref_, current_;
+  float ref_;
   float ref_vel_limit_ = FLT_MAX;
   float ref_limit_min_ = -FLT_MAX;
   float ref_limit_max_ = FLT_MAX;

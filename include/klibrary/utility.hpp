@@ -33,4 +33,11 @@ template <size_t N> void print_vec(std::array<float, N> data) {
 inline void delay(std::chrono::milliseconds ms) {
   tutrcos::core::Thread::delay(ms.count());
 }
+
+uint8_t calc_checksum(std::vector<uint8_t> data) {
+  uint8_t checksum = 0;
+  for (uint8_t i : data)
+    checksum += i;
+  return checksum;
+}
 } // namespace klibaray
