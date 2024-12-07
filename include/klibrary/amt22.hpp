@@ -26,7 +26,7 @@ public:
         cpr_{1 << tutrcos::utility::to_underlying(resolution)},
         cut_point_{static_cast<int64_t>(cpr_ * cut_point)} {}
 
-  bool update() override {
+  bool update() {
     int64_t count;
     if (!tutrcos::module::AMT22::update()) {
       return false;

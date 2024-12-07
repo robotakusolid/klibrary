@@ -11,7 +11,7 @@
 constexpr float deg2rad(float deg) { return deg / 180. * M_PI; }
 constexpr float rad2Deg(float rad) { return rad * M_PI / 180.; }
 
-namespace klibaray {
+namespace klibrary {
 void print_vec(std::vector<uint8_t> data) {
   for (uint8_t d : data) {
     printf("%d, ", d);
@@ -40,4 +40,4 @@ uint8_t calc_checksum(std::vector<uint8_t> data) {
     checksum += i;
   return checksum;
 }
-} // namespace klibaray
+} // namespace klibrary
