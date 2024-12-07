@@ -2,9 +2,10 @@
 
 #include "main.h"
 
-#include "tutrcos.hpp"
-#include "tutrcos/module/encoder_base.hpp"
+#include "utility.hpp"
 #include <cmath>
+#include <tutrcos.hpp>
+#include <tutrcos/module/encoder_base.hpp>
 
 using namespace tutrcos;
 using namespace tutrcos::module;
@@ -31,15 +32,48 @@ public:
   virtual void stop() { set_input(0); }
   virtual void set_input(float value) { input_ = value; };
 
+  void set_mode(ControlType mode) { mode_ = mode; }
+
+  void set_offset_degree(float value) {
+    offset_ = value / 360. / reduction_ratio_ * get_cpr();
+  }
+
+  void set_ref(float ref) {
+    uint32_t dt = tutrcos::core::Kernel::get_ticks() - prev_ticks_ref_;
+    ref = pre_ref_ + std::clamp<float>(ref - pre_ref_, -ref_vel_limit_ * dt,
+                                       ref_vel_limit_ * dt);
+    ref_ = std::clamp<float>(ref, ref_limit_min_, ref_limit_max_);
+    pre_ref_ = ref_;
+    prev_ticks_ref_ += dt;
+  }
+
+  void set_ref_limit_rad(float ref_min, float ref_max, // min, max, /s
+                         float ref_vel = FLT_MAX) {
+    ref_limit_min_ = ref_min;
+    ref_limit_max_ = ref_max;
+    ref_vel_limit_ = abs(ref_vel);
+  }
+
+  void set_ref_limit_degree(float ref_min, float ref_max, // min, max, /s
+                            float ref_vel = FLT_MAX) {
+    ref_limit_min_ = deg2rad(ref_min);
+    ref_limit_max_ = deg2rad(ref_max);
+    ref_vel_limit_ = deg2rad(abs(ref_vel));
+  }
+
+  // Kp, Ki, Kd, maximum value of Isum, minimum value of p to calc Isum
+  void set_pid_gain(float kp, float ki, float kd, float i_max = FLT_MAX,
+                    float i_min = 0) {
+    kp_ = kp;
+    ki_ = ki;
+    kd_ = kd;
+    i_max_ = i_max;
+    i_min_ = i_min;
+  }
+
   bool control() {
     // bool return_value = false;
     uint32_t dt = tutrcos::core::Kernel::get_ticks() - prev_ticks_;
-    if (enc_ != nullptr) {
-      if (!enc_->update()) {
-        return false;
-      }
-      this->set_count(enc_->get_count());
-    }
 
     switch (mode_) {
     case ControlType::PI_D_RAD: {
@@ -65,52 +99,21 @@ public:
     }
     default: {
       i_ = 0;
+      break;
     }
     }
     prev_ticks_ += dt;
     return true;
   }
 
-  void set_ref(float ref) {
-    uint32_t dt = tutrcos::core::Kernel::get_ticks() - prev_ticks_ref_;
-    ref = pre_ref_ + std::clamp<float>(ref - pre_ref_, -ref_vel_limit_ * dt,
-                                       ref_vel_limit_ * dt);
-    ref_ = std::clamp<float>(ref, ref_limit_min_, ref_limit_max_);
-    pre_ref_ = ref_;
-    prev_ticks_ref_ += dt;
-  }
-
-  // min, max, /s
-  void set_ref_limit_rad(float ref_min, float ref_max,
-                         float ref_vel = FLT_MAX) {
-    ref_limit_min_ = ref_min;
-    ref_limit_max_ = ref_max;
-    ref_vel_limit_ = abs(ref_vel);
-  }
-
-  void set_mode(ControlType mode) { mode_ = mode; }
-
-  // Kp, Ki, Kd, maximum value of Isum, minimum value of p to calc Isum
-  void set_pid_gain(float kp, float ki, float kd, float i_max = FLT_MAX,
-                    float i_min = 0) {
-    kp_ = kp;
-    ki_ = ki;
-    kd_ = kd;
-    i_max_ = i_max;
-    i_min_ = i_min;
-  }
-
-  void set_offset_degree(float value) {
-    offset_ = value / 360. / reduction_ratio_ * get_cpr();
-  }
-
-  EncoderBase *enc_ = nullptr;
+protected:
+  const int8_t dir_;
+  int64_t offset_;
+  EncoderBase *enc_;
 
 private:
   const float tickrate_ = 1000;
-  const int8_t dir_;
   const float reduction_ratio_;
-  int offset_;
 
   ControlType mode_;
   float input_;

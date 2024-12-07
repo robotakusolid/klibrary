@@ -8,7 +8,6 @@
 
 #include "motor_base.hpp"
 #include <tutrcos/module/sts3215.hpp>
-#include <tutrcos/utility.hpp>
 
 namespace klibrary {
 
@@ -17,13 +16,17 @@ public:
   STS3215(tutrcos::module::STS3215 &sts, Dir dir, float reduction_ratio,
           EncoderBase *enc = nullptr)
       : MotorBase{dir, reduction_ratio,
-                  (enc == nullptr) ? 4096 : enc->get_cpr(), enc},
+                  ((enc != nullptr) ? enc->get_cpr() : 4096), enc},
         sts_{sts} {}
 
   bool update() override {
-    control();
     sts_.update();
-    set_count(sts_.get_count());
+    if (enc_ != nullptr) {
+      set_count(enc_->get_count() + offset_);
+    } else {
+      set_count(sts_.get_count() + offset_);
+    }
+    control();
     return true;
   }
 
