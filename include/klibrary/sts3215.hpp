@@ -29,11 +29,11 @@ public:
 
   bool update() override {
     int64_t count = 0;
-    if (sts_.update()) {
+    if (!sts_.update()) {
       return false;
     }
     if (enc_ != nullptr) {
-      if (enc_->update()) {
+      if (!enc_->update()) {
         return false;
       }
       count = enc_->get_count();
