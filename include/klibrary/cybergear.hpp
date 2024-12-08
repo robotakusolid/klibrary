@@ -14,9 +14,7 @@ public:
 
   bool update() override {
     if (enc_ != nullptr) {
-      if (!enc_->update()) {
-        return false;
-      }
+      RETURNFALSE(enc_->update());
       set_count(enc_->get_count() + offset_);
     } else {
       // set_count(cyber_.get_count() + offset_);
@@ -24,6 +22,9 @@ public:
     control();
     return true;
   }
+
+  void set_input(float ampare) { cyber_.set_current(ampare); }
+  void stop() override { ; }
 
 private:
   tutrcos::module::Cybergear &cyber_;

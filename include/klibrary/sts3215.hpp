@@ -29,13 +29,9 @@ public:
 
   bool update() override {
     int64_t count = 0;
-    if (!sts_.update()) {
-      return false;
-    }
+    RETURNFALSE(sts_.update());
     if (enc_ != nullptr) {
-      if (!enc_->update()) {
-        return false;
-      }
+      RETURNFALSE(enc_->update());
       count = enc_->get_count();
     } else {
       count = sts_.get_count();
@@ -50,6 +46,9 @@ public:
     control();
     return true;
   }
+
+  void set_input(float value) override { ; }
+  void stop() override { ; }
 
 private:
   tutrcos::module::STS3215 &sts_;

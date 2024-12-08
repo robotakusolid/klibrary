@@ -25,9 +25,7 @@ public:
 
   bool update() override {
     if (enc_ != nullptr) {
-      if (!enc_->update()) {
-        return false;
-      }
+      RETURNFALSE(enc_->update());
       set_count(enc_->get_count() + offset_);
     } else {
       set_count(c6_.get_count() + offset_);
@@ -35,6 +33,9 @@ public:
     control();
     return true;
   }
+  
+  void set_input(float value) override { ; }
+  void stop() override { ; }
 
 private:
   tutrcos::module::C6x0 &c6_;

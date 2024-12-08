@@ -13,6 +13,12 @@ using namespace tutrcos::module;
 namespace klibrary {
 class MotorBase : public EncoderBase {
 #define FLT_MAX std::numeric_limits<float>::max()
+#define RETURNFALSE(x)                                                         \
+  {                                                                            \
+    if (!x)                                                                    \
+      return false;                                                            \
+  }
+
 public:
   enum class Dir : int8_t {
     FORWARD = 1,
@@ -28,9 +34,9 @@ public:
     enc_ = enc;
   }
 
-  virtual bool update() = 0; // { return control(); };
-  virtual void stop() { set_input(0); }
-  virtual void set_input(float value) { input_ = value; };
+  virtual bool update() = 0;         //{ return control(); };
+  virtual void stop() = 0;           //{ set_input(0); }
+  virtual void set_input(float) = 0; //{ input_ = value; };
 
   float get_rotation() override {
     return static_cast<float>(get_count()) / get_cpr() * dir_;
