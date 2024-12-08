@@ -19,7 +19,8 @@ public:
                     motor_dir,
                     enc,
                     enc_dir,
-                    (((c6->get_type() == tutrcos::module::C6x0::Type::C610)
+                    (((rtype == Type::ENCODER) ? 1
+                      : (c6->get_type() == tutrcos::module::C6x0::Type::C610)
                           ? (1.0f / 36)
                       : (c6->get_type() == tutrcos::module::C6x0::Type::C620)
                           ? (1.0f / 19)
@@ -30,7 +31,7 @@ public:
     c6_ = c6;
   }
 
-  void set_input(float value) override { c6_->set_current(value); }
+  void set_input(float ampare) override { c6_->set_current(ampare * 1000); }
   void stop() override { ; }
 
 private:

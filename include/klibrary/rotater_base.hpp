@@ -141,7 +141,8 @@ public:
   }
 
   float get_rotation() override {
-    return (static_cast<float>(get_count()) / this->get_cpr() -
+    return (static_cast<float>(get_count()) / this->get_cpr() *
+                reduction_ratio_ -
             offset_rotation_) *
            o_dir_;
   }
