@@ -28,7 +28,7 @@ public:
     enc_ = enc;
   }
 
-  virtual bool update() { return control(); };
+  virtual bool update() = 0; // { return control(); };
   virtual void stop() { set_input(0); }
   virtual void set_input(float value) { input_ = value; };
 

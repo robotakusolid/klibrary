@@ -29,8 +29,13 @@ public:
 
   bool update() override {
     int64_t count = 0;
-    sts_.update();
+    if (sts_.update()) {
+      return false;
+    }
     if (enc_ != nullptr) {
+      if (enc_->update()) {
+        return false;
+      }
       count = enc_->get_count();
     } else {
       count = sts_.get_count();

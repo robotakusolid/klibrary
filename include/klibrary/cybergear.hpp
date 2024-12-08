@@ -14,6 +14,9 @@ public:
 
   bool update() override {
     if (enc_ != nullptr) {
+      if (enc_->update()) {
+        return false;
+      }
       set_count(enc_->get_count() + offset_);
     } else {
       // set_count(cyber_.get_count() + offset_);
