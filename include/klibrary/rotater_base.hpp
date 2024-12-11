@@ -90,55 +90,12 @@ public:
                     dir,   reduction_ratio,
                     tmode, cut_point} {}
 
-  // RotaterBase(InitStruct init)
-  //     : RotaterBase{init.rtype, init.motor,    init.motor_dir,
-  //                   init.enc,   init.enc_dir,  init.reduction_ratio,
-  //                   init.tmode, init.cut_point} {}
-
-  // virtual bool update_motor() = 0;   //{ return control(); };
-  // virtual void stop() = 0;           //{ set_input(0); }
-  // virtual void set_input(float) = 0; //{ input_ = value; };
+  virtual bool transmit() = 0;
   virtual void stop() { set_input(0); }
-  virtual void set_input(float value) { input_ = value; };
 
-  bool update() override {
-    int64_t count = 0;
-    NOTNULL(motor_, {RETURNFALSE(motor_->update())}, ;)
-    NOTNULL(enc_, {RETURNFALSE(enc_->update())}, ;)
-    switch (rotater_type_) {
-    case Type::MOTOR: {
-      NOTNULL(motor_, { count = motor_->get_count(); }, ;)
-      break;
-    }
-    case Type::ENCODER: {
-      NOTNULL(enc_, { count = enc_->get_count(); }, ;)
-      break;
-    }
-    }
-
-    switch (turn_mode_) {
-    case Turn::SINGLE: {
-      if (count > cut_point_) {
-        count -= this->get_cpr();
-      }
-      break;
-    }
-    case Turn::MULTI: {
-      // int16_t delta = count - prev_count_;
-      // if (delta > (get_cpr() / 2)) {
-      //   delta -= get_cpr();
-      // } else if (delta < -(get_cpr() / 2)) {
-      //   delta += get_cpr();
-      // }
-      // set_count(get_count() + delta);
-      break;
-    }
-    }
-    // count_ = count;
-    set_count(count);
-    control();
-    return true;
-  }
+  float get_input() { return input_; }
+  float get_ref() { return ref_; }
+  Turn get_turn_mode() { return turn_mode_; }
 
   float get_rotation() override {
     return (static_cast<float>(get_count()) / this->get_cpr() *
@@ -146,7 +103,6 @@ public:
             offset_rotation_) *
            o_dir_;
   }
-
   float get_rps() override {
     float rps = 0;
     switch (rotater_type_) {
@@ -163,8 +119,6 @@ public:
   }
 
   void set_control_mode(Control mode) { mode_ = mode; }
-
-  Turn get_turn_mode() { return turn_mode_; }
 
   void set_offset_degree(float value) {
     // offset_ = value / 360. / reduction_ratio_ * get_cpr() * o_dir_;
@@ -204,9 +158,50 @@ public:
     i_min_ = i_min;
   }
 
+  bool update() override {
+    int64_t count = 0;
+    NOTNULL(motor_, {RETURNFALSE(motor_->update())}, ;)
+    NOTNULL(enc_, {RETURNFALSE(enc_->update())}, ;)
+    switch (rotater_type_) {
+    case Type::MOTOR: {
+      NOTNULL(motor_, { count = motor_->get_count(); }, ;)
+      break;
+    }
+    case Type::ENCODER: {
+      NOTNULL(enc_, { count = enc_->get_count(); }, ;)
+      break;
+    }
+    }
+
+    switch (turn_mode_) {
+    case Turn::SINGLE: {
+      if (count > cut_point_) {
+        count -= this->get_cpr();
+      }
+      break;
+    }
+    case Turn::MULTI: {
+      // int16_t delta = count - prev_count_;
+      // if (delta > (get_cpr() / 2)) {
+      //   delta -= get_cpr();
+      // } else if (delta < -(get_cpr() / 2)) {
+      //   delta += get_cpr();
+      // }
+      // set_count(get_count() + delta);
+      break;
+    }
+    }
+    // count_ = count;
+    set_count(count);
+    control();
+    // return true;
+    return transmit();
+  }
+
   bool control() {
     // bool return_value = false;
     uint32_t dt = tutrcos::core::Kernel::get_ticks() - prev_ticks_;
+    float input;
     switch (mode_) {
     case Control::PI_D_RAD: {
       x_ = get_rad();
@@ -214,15 +209,13 @@ public:
       i_ += p_ * (dt / tickrate_);
       i_ = (abs(p_) < i_min_) ? 0 : std::clamp<float>(i_, -i_max_, i_max_);
       d_ = (pre_x_ - x_) / (dt / tickrate_);
-      input_ = (p_ * kp_ + i_ * ki_ + d_ * kd_);
+      input = (p_ * kp_ + i_ * ki_ + d_ * kd_);
       pre_x_ = x_;
-      // set_input(input_ * dir_);
-      set_input(input_);
+      set_input(input);
       break;
     }
     case Control::RAW: {
       i_ = 0;
-      // set_input(ref_ * dir_);
       set_input(ref_);
       break;
     }
@@ -241,7 +234,14 @@ public:
   }
 
 protected:
+  virtual void set_raw_input(float) = 0;
+
 private:
+  void set_input(float value) {
+    input_ = value * i_dir_;
+    set_raw_input(input_);
+  }
+
   const float tickrate_ = 1000;
 
   const int8_t i_dir_; // input_dir

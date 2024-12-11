@@ -31,7 +31,8 @@ public:
     c6_ = c6;
   }
 
-  void set_input(float ampare) override { c6_->set_current(ampare * 1000); }
+  void set_raw_input(float ampare) override { c6_->set_current(ampare * 1000); }
+  bool transmit() override { return c6_->transmit(); }
   void stop() override { ; }
 
 private:

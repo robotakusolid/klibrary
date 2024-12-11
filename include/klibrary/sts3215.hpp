@@ -27,7 +27,8 @@ public:
       : STS3215{rtype,           sts,   motor_dir, nullptr, RB::Dir::FORWARD,
                 reduction_ratio, tmode, cut_point} {}
 
-  void set_input(float value) override { sts_->set_input(value); }
+  void set_raw_input(float value) override { sts_->set_input(value); }
+  bool transmit() override { return sts_->transmit(); }
   void stop() override { ; }
 
 private:

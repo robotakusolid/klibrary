@@ -13,7 +13,7 @@
 #include <vector>
 
 constexpr float deg2rad(float deg) { return deg / 180. * M_PI; }
-constexpr float rad2Deg(float rad) { return rad * M_PI / 180.; }
+constexpr float rad2deg(float rad) { return rad * 180. / M_PI; }
 
 namespace klibrary {
 void print_vec(std::vector<uint8_t> data) {

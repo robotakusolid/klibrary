@@ -16,7 +16,8 @@ public:
     cyber_ = cyber;
   }
 
-  void set_input(float ampare) { cyber_->set_current(ampare); }
+  void set_raw_input(float ampare) override { cyber_->set_current(ampare); }
+  bool transmit() override { return cyber_->transmit(); }
   void stop() override { ; }
 
 private:
