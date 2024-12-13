@@ -4,6 +4,7 @@
 
 #include "utility.hpp"
 #include <cmath>
+#include <string>
 #include <tutrcos.hpp>
 #include <tutrcos/module/encoder_base.hpp>
 
@@ -13,23 +14,24 @@ using namespace tutrcos::module;
 namespace klibrary {
 class RotaterBase : public EncoderBase {
 #define FLT_MAX std::numeric_limits<float>::max()
-#define RETURNFALSE(x)                                                         \
-  {                                                                            \
-    if (!x) {                                                                  \
-      return false;                                                            \
-    }                                                                          \
+#define RETURNFALSE(x)                                                                                                      \
+  {                                                                                                                         \
+    if (!x) {                                                                                                               \
+      return false;                                                                                                         \
+    }                                                                                                                       \
   }
 
-#define NOTNULL(pointer, do_exist, do_null)                                    \
-  {                                                                            \
-    if (pointer != nullptr) {                                                  \
-      do_exist                                                                 \
-    } else {                                                                   \
-      do_null                                                                  \
-    }                                                                          \
+#define NOTNULL(pointer, do_exist, do_null)                                                                                 \
+  {                                                                                                                         \
+    if (pointer != nullptr) {                                                                                               \
+      do_exist                                                                                                              \
+    } else {                                                                                                                \
+      do_null                                                                                                               \
+    }                                                                                                                       \
   }
 
 public:
+  std::string name = "";
   enum class Type { // どちらから回転角を取得するか
     MOTOR,
     ENCODER,
@@ -69,22 +71,17 @@ public:
     float cut_point = 0.5;
   } HalfInitStruct;
 
-  RotaterBase(Type rtype, EncoderBase *motor, Dir motor_dir, EncoderBase *enc,
-              Dir enc_dir, float reduction_ratio = 1, Turn tmode = Turn::MULTI,
-              float cut_point = 0.5)
-      : EncoderBase{(rtype == Type::MOTOR) ? motor->get_cpr() : enc->get_cpr()},
-        i_dir_{utility::to_underlying(motor_dir)},
-        o_dir_{utility::to_underlying((rtype == Type::ENCODER) ? enc_dir
-                                                               : motor_dir)},
-        reduction_ratio_{reduction_ratio}, turn_mode_{tmode},
-        rotater_type_{rtype},
-        cut_point_{static_cast<int64_t>(this->get_cpr() * cut_point)} {
+  RotaterBase(Type rtype, EncoderBase *motor, Dir motor_dir, EncoderBase *enc, Dir enc_dir, float reduction_ratio = 1,
+              Turn tmode = Turn::MULTI, float cut_point = 0.5)
+      : EncoderBase{(rtype == Type::MOTOR) ? motor->get_cpr() : enc->get_cpr()}, i_dir_{utility::to_underlying(motor_dir)},
+        o_dir_{utility::to_underlying((rtype == Type::ENCODER) ? enc_dir : motor_dir)}, reduction_ratio_{reduction_ratio},
+        turn_mode_{tmode}, rotater_type_{rtype}, cut_point_{static_cast<int64_t>(this->get_cpr() * cut_point)} {
     motor_ = motor;
     enc_ = enc;
   }
 
-  RotaterBase(Type rtype, EncoderBase *tmp, Dir dir, float reduction_ratio = 1,
-              Turn tmode = Turn::MULTI, float cut_point = 0.5)
+  RotaterBase(Type rtype, EncoderBase *tmp, Dir dir, float reduction_ratio = 1, Turn tmode = Turn::MULTI,
+              float cut_point = 0.5)
       : RotaterBase{rtype, ((rtype == Type::MOTOR) ? tmp : nullptr),
                     dir,   ((rtype == Type::ENCODER) ? tmp : nullptr),
                     dir,   reduction_ratio,
@@ -98,10 +95,7 @@ public:
   Turn get_turn_mode() { return turn_mode_; }
 
   float get_rotation() override {
-    return (static_cast<float>(get_count()) / this->get_cpr() *
-                reduction_ratio_ -
-            offset_rotation_) *
-           o_dir_;
+    return (static_cast<float>(get_count()) / this->get_cpr() * reduction_ratio_ - offset_rotation_) * o_dir_;
   }
   float get_rps() override {
     float rps = 0;
@@ -127,8 +121,7 @@ public:
 
   void set_ref(float ref) {
     uint32_t dt = tutrcos::core::Kernel::get_ticks() - prev_ticks_ref_;
-    ref = pre_ref_ + std::clamp<float>(ref - pre_ref_, -ref_vel_limit_ * dt,
-                                       ref_vel_limit_ * dt);
+    ref = pre_ref_ + std::clamp<float>(ref - pre_ref_, -ref_vel_limit_ * dt, ref_vel_limit_ * dt);
     ref_ = std::clamp<float>(ref, ref_limit_min_, ref_limit_max_);
     pre_ref_ = ref_;
     prev_ticks_ref_ += dt;
@@ -149,8 +142,7 @@ public:
   }
 
   // Kp, Ki, Kd, maximum value of Isum, minimum value of p to calc Isum
-  void set_pid_gain(float kp, float ki, float kd, float i_min = 0,
-                    float i_max = FLT_MAX) {
+  void set_pid_gain(float kp, float ki, float kd, float i_min = 0, float i_max = FLT_MAX) {
     kp_ = kp;
     ki_ = ki;
     kd_ = kd;
@@ -194,7 +186,6 @@ public:
     // count_ = count;
     set_count(count);
     control();
-    // return true;
     return transmit();
   }
 
@@ -206,9 +197,9 @@ public:
     case Control::PI_D_RAD: {
       x_ = get_rad();
       p_ = ref_ - x_;
-      i_ += p_ * (dt / tickrate_);
+      i_ += p_ * (static_cast<float>(dt) / tickrate_);
       i_ = (abs(p_) < i_min_) ? 0 : std::clamp<float>(i_, -i_max_, i_max_);
-      d_ = (pre_x_ - x_) / (dt / tickrate_);
+      d_ = (pre_x_ - x_) / (static_cast<float>(dt) / tickrate_);
       input = (p_ * kp_ + i_ * ki_ + d_ * kd_);
       pre_x_ = x_;
       set_input(input);
@@ -254,19 +245,19 @@ private:
   EncoderBase *motor_;
   EncoderBase *enc_;
 
-  int64_t count_;
-  int64_t offset_rotation_;
-  float input_;
+  int64_t count_ = 0;
+  int64_t offset_rotation_ = 0;
+  float input_ = 0;
 
-  uint32_t prev_ticks_;
-  uint32_t prev_ticks_ref_;
+  uint32_t prev_ticks_ = 0;
+  uint32_t prev_ticks_ref_ = 0;
 
-  float prev_p_;
-  float p_, i_, d_;
-  float kp_, ki_, kd_, i_max_, i_min_;
-  float x_, pre_x_;
+  float prev_p_ = 0;
+  float p_ = 0, i_ = 0, d_ = 0;
+  float kp_ = 0, ki_ = 0, kd_ = 0, i_max_ = FLT_MAX, i_min_ = 0;
+  float x_ = 0, pre_x_ = 0;
 
-  float ref_;
+  float ref_ = 0;
   float ref_vel_limit_ = FLT_MAX;
   float ref_limit_min_ = -FLT_MAX;
   float ref_limit_max_ = FLT_MAX;
