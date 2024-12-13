@@ -16,17 +16,14 @@ class RotaterBase : public EncoderBase {
 #define FLT_MAX std::numeric_limits<float>::max()
 #define RETURNFALSE(x)                                                                                                      \
   {                                                                                                                         \
-    if (!x) {                                                                                                               \
+    if (!x)                                                                                                                 \
       return false;                                                                                                         \
-    }                                                                                                                       \
   }
 
-#define NOTNULL(pointer, do_exist, do_null)                                                                                 \
+#define NOTNULL(pointer, do_exist)                                                                                          \
   {                                                                                                                         \
     if (pointer != nullptr) {                                                                                               \
       do_exist                                                                                                              \
-    } else {                                                                                                                \
-      do_null                                                                                                               \
     }                                                                                                                       \
   }
 
@@ -101,15 +98,22 @@ public:
     float rps = 0;
     switch (rotater_type_) {
     case Type::MOTOR: {
-      NOTNULL(motor_, { rps = motor_->get_rps(); }, ;)
+      NOTNULL(motor_, { rps = motor_->get_rps(); })
       break;
     }
     case Type::ENCODER: {
-      NOTNULL(enc_, { rps = enc_->get_rps(); }, ;)
+      NOTNULL(enc_, { rps = enc_->get_rps(); })
       break;
     }
     }
     return rps * o_dir_;
+  }
+
+  void set_input_compensation(float value) { compensation_ = value; }
+
+  void set_input(float value) {
+    input_ = (value + compensation_) * i_dir_;
+    set_raw_input(input_);
   }
 
   void set_control_mode(Control mode) { mode_ = mode; }
@@ -152,15 +156,19 @@ public:
 
   bool update() override {
     int64_t count = 0;
-    NOTNULL(motor_, {RETURNFALSE(motor_->update())}, ;)
-    NOTNULL(enc_, {RETURNFALSE(enc_->update())}, ;)
     switch (rotater_type_) {
     case Type::MOTOR: {
-      NOTNULL(motor_, { count = motor_->get_count(); }, ;)
+      NOTNULL(motor_, {
+        RETURNFALSE(motor_->update());
+        count = motor_->get_count();
+      })
       break;
     }
     case Type::ENCODER: {
-      NOTNULL(enc_, { count = enc_->get_count(); }, ;)
+      NOTNULL(enc_, {
+        RETURNFALSE(enc_->update());
+        count = enc_->get_count();
+      })
       break;
     }
     }
@@ -228,11 +236,6 @@ protected:
   virtual void set_raw_input(float) = 0;
 
 private:
-  void set_input(float value) {
-    input_ = value * i_dir_;
-    set_raw_input(input_);
-  }
-
   const float tickrate_ = 1000;
 
   const int8_t i_dir_; // input_dir
@@ -248,6 +251,7 @@ private:
   int64_t count_ = 0;
   int64_t offset_rotation_ = 0;
   float input_ = 0;
+  float compensation_ = 0;
 
   uint32_t prev_ticks_ = 0;
   uint32_t prev_ticks_ref_ = 0;
