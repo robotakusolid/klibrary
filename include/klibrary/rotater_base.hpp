@@ -45,6 +45,7 @@ public:
     PI_D_RADPS,
     RAW,
     ZERO,
+    OFF,
   };
 
   typedef struct {
