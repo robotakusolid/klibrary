@@ -28,7 +28,6 @@ class RotaterBase : public EncoderBase {
   }
 
 public:
-  std::string name = "";
   enum class Type { // どちらから回転角を取得するか
     MOTOR,
     ENCODER,
@@ -84,7 +83,7 @@ public:
                     dir,   reduction_ratio,
                     tmode, cut_point} {}
 
-  virtual bool transmit() = 0;
+  virtual bool transmit() { return true; };
   virtual void stop() { set_input(0); }
 
   float get_input() { return input_; }
@@ -113,8 +112,11 @@ public:
 
   void set_input(float value) {
     input_ = (value + compensation_) * i_dir_;
+    input_ = std::clamp<float>(input_, -input_limit_, input_limit_);
     set_raw_input(input_);
   }
+
+  void set_input_limit(float max) { input_limit_ = max; }
 
   void set_control_mode(Control mode) { mode_ = mode; }
 
@@ -194,7 +196,7 @@ public:
     // count_ = count;
     set_count(count);
     control();
-    return transmit();
+    return true;
   }
 
   bool control() {
@@ -221,6 +223,7 @@ public:
     case Control::ZERO: {
       i_ = 0;
       set_input(0);
+      set_input_compensation(0);
       break;
     }
     default: {
@@ -233,7 +236,7 @@ public:
   }
 
 protected:
-  virtual void set_raw_input(float) = 0;
+  virtual void set_raw_input(float) {};
 
 private:
   const float tickrate_ = 1000;
@@ -251,6 +254,7 @@ private:
   int64_t count_ = 0;
   int64_t offset_rotation_ = 0;
   float input_ = 0;
+  float input_limit_ = FLT_MAX;
   float compensation_ = 0;
 
   uint32_t prev_ticks_ = 0;
