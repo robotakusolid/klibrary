@@ -16,7 +16,12 @@ public:
 
   void set_raw_input(float ampare) override { cyber_->set_current(ampare); }
   bool transmit() override { return cyber_->transmit(); }
-  void stop() override { ; }
+  void stop() override { cyber_->stop(); }
+  void reset() override {
+    cyber_->reset();
+    cyber_->set_motor_mode(tutrcos::module::Cybergear::MotorMode::CURRENT);
+    cyber_->enable();
+  }
 
 private:
   tutrcos::module::Cybergear *cyber_;

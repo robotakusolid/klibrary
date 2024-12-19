@@ -16,8 +16,7 @@ class RotaterBase : public EncoderBase {
 #define FLT_MAX std::numeric_limits<float>::max()
 #define RETURNFALSE(x)                                                                                                      \
   {                                                                                                                         \
-    if (!x)                                                                                                                 \
-      return false;                                                                                                         \
+    if (!x) return false;                                                                                                   \
   }
 
 #define NOTNULL(pointer, do_exist)                                                                                          \
@@ -86,6 +85,7 @@ public:
 
   virtual bool transmit() { return true; };
   virtual void stop() { set_input(0); }
+  virtual void reset() {}
 
   float get_input() { return input_; }
   float get_ref() { return ref_; }
@@ -128,7 +128,8 @@ public:
 
   void set_ref(float ref) {
     uint32_t dt = tutrcos::core::Kernel::get_ticks() - prev_ticks_ref_;
-    ref = pre_ref_ + std::clamp<float>(ref - pre_ref_, -ref_vel_limit_ * dt, ref_vel_limit_ * dt);
+    float limit = ref_vel_limit_ * (dt / tickrate_);
+    ref = pre_ref_ + std::clamp<float>((ref - pre_ref_), -limit, limit);
     ref_ = std::clamp<float>(ref, ref_limit_min_, ref_limit_max_);
     pre_ref_ = ref_;
     prev_ticks_ref_ += dt;
@@ -229,6 +230,8 @@ public:
     }
     default: {
       i_ = 0;
+      set_input(0);
+      set_input_compensation(0);
       break;
     }
     }
